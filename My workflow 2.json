@@ -1,0 +1,217 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3404b16e-b40a-4efd-8a44-1842cd55a5c0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/repositories?q=language:python&sort=stars&order=desc&per_page=5",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "3705b115-1a9f-4c7c-9309-b4dbb7125c50",
+      "name": "HTTP Request",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const repos = $input.first().json.items || [];\n\nreturn repos.slice(0, 5).map(repo => ({\n  json: {\n    name: repo.name,\n    full_name: repo.full_name,\n    url: repo.html_url,\n    stars: repo.stargazers_count,\n    description: repo.description,\n    owner: repo.owner.login,\n    readme_url: `https://api.github.com/repos/${repo.full_name}/readme`\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "2c1fcca8-496d-4e47-b00c-dabb72672304",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.readme_url}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "aa205c63-99e1-415a-afc2-d8507d51ee2e",
+      "name": "HTTP Request1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8c1a57d3-309e-4c7a-8746-4410527ebfd4",
+              "leftValue": "={{ $('Code in JavaScript').item.json.stars }}",
+              "rightValue": 1000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        0
+      ],
+      "id": "4112d80c-e012-438f-aef5-1bde5943f67a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const readmes = $input.all();\nconst repos = $('Code in JavaScript').all();\n\nreturn readmes.map((item, i) => {\n  const repo = repos[i]?.json;\n\n  return {\n    json: {\n      name: repo?.name,\n      stars: repo?.stars,\n      url: repo?.url,\n      message: `${repo?.name} has ${repo?.stars} stars. README fetched successfully.`\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -96
+      ],
+      "id": "5b536128-c07f-496f-86bd-c0a2e42ca8f7",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{$json.message}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        -96
+      ],
+      "id": "81c83a4d-d599-4f5f-9043-6dc70a62e3ab",
+      "name": "Discord",
+      "webhookId": "176e1c24-bc07-4b49-b6c5-518985dbeb11",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "aD6FtgDOzkr8HIAv",
+          "name": "Discord Webhook account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "048b1e36-0c79-423c-be83-a045923e5c71",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1809f62dfa30c3c681ff7fcebe57af74ca226deca2394d42d419d152b9eb272d"
+  },
+  "nodeGroups": [],
+  "id": "v9toJqMY5BjOxZBi",
+  "tags": []
+}
