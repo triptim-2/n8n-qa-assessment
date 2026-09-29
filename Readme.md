@@ -31,5 +31,5 @@ Credentials are stored using n8n's credential system. No webhook secrets or API 
 The workflow executed successfully and sent 5 repository results to Discord with their actual star counts.
 
 ### Files
-- `Task2_Workflow_Tripti.json` – exported n8n workflow
+- `My workflow 2.json` – exported n8n workflow
 - Screenshots – workflow and successful execution evidence
